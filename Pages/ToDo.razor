@@ -1,5 +1,7 @@
 ﻿@page "/todo"
+@*@inherits OwningComponentBase<TransientDisposable>
 
+<h3>@Service.ReturnHello()</h3>*@
 <h3>Todo (@todos.Count(todo => !todo.IsDone))</h3>
 
 <ul>

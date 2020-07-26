@@ -11,11 +11,27 @@ namespace BlazorWasmTodoList
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
+            builder.DetectIncorrectUsageOfTransients();
             builder.RootComponents.Add<App>("app");
 
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+            builder.Services.AddTransient<TransientDisposable>();
+            builder.Services.AddScoped(sp => new HttpClient { 
+                BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+            });
 
-            await builder.Build().RunAsync();
+            var host = builder.Build();
+            host.EnableTransientDisposableDetection();
+            await host.RunAsync();
+        }
+    }
+
+    public class TransientDisposable : IDisposable
+    {
+        public void Dispose() => throw new NotImplementedException();
+
+        public string ReturnHello()
+        {
+            return "Hello";
         }
     }
 }
