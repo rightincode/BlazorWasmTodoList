@@ -1,41 +1,92 @@
 ﻿@page "/todo"
+@using System.Net.Http
 @inject HttpClient httpClient
 
-<h3>Todo (@todos.Count(todo => !todo.Completed))</h3>
+<h3>Todo's</h3>
 
-<ul>
-    @foreach (var todo in todos)
+<table>
+    <tr id="editRow" style="display:@editRowStyle">
+        <td class="text-center">
+            <input type="checkbox" @bind="editItem.Completed" />
+        </td>
+        <td>
+            <input @bind="editItem.Name" />
+        </td>
+        <td class="text-center">
+            <button class="btn btn-success" @onclick="@SaveTodo">Save</button>
+            <button class="btn btn-danger" @onclick="@(() => editRowStyle = "none")">Cancel</button>
+        </td>
+    </tr>
+    @foreach (var item in todos)
     {
-        <li>
-            <input type="checkbox" @bind="todo.Completed" />
-            <input @bind="todo.Name" />
-        </li>
-    }
-</ul>
+        <tr>
+            <td class="text-center">
+                @if (item.Completed)
+                {
+        <span>&#10004;</span>}
+            </td>
+            <td>@item.Name</td>
+            <td class="text-center">
+                <button class="btn btn-warning" @onclick="@(() => EditTodo(item.Id))">Edit</button>
+                @*<button class="btn btn-danger" @onclick="@(async () => await DeleteItem(item.Id))">Delete</button>*@
+            </td>
+        </tr>            
+     }
+</table>
 
 <input placeholder="Something todo" @bind="newTodo" />
-@*<button @onclick="AddTodo">Add todo</button>*@
+<button @onclick="AddTodo">Add todo</button>
 
 @code {
+    private string editRowStyle = "none";
+
     private IList<TodoItem> todos = new List<TodoItem>();
     private string newTodo;
 
     private const string ServiceEndpoint = "https://localhost:44395/api/todoitem";
 
     private TodoItem editItem = new TodoItem();
-    private string editRowStyle = "none";
-    private string newItemName;
 
     protected override async Task OnInitializedAsync() => await GetTodoItems();
 
     private async Task GetTodoItems() => todos = await httpClient.GetFromJsonAsync<List<TodoItem>>(ServiceEndpoint);
 
-    //private void AddTodo()
-    //{
-    //    if (!string.IsNullOrWhiteSpace(newTodo))
-    //    {
-    //        todos.Add(new TodoItem { Title = newTodo });
-    //        newTodo = string.Empty;
-    //    }
-    //}
+    private async Task AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            var newItem = new TodoItem
+            {
+                Id = 0,
+                Name = newTodo,
+                Completed = false
+            };
+
+            var response = await httpClient.PostAsJsonAsync<TodoItem>(ServiceEndpoint, newItem);
+            var savedTodoItem = await response.Content.ReadFromJsonAsync<TodoItem>();
+
+            todos.Add(savedTodoItem);
+
+            newTodo = string.Empty;
+        }
+    }
+
+    private void EditTodo(long id)
+    {
+        editItem = todos.Single(i => i.Id == id);
+        editRowStyle = "table-row";
+    }
+
+    private async Task SaveTodo()
+    {
+        if (!string.IsNullOrEmpty(editItem.Name))
+        {
+            var response = await httpClient.PutAsJsonAsync<TodoItem>($"{ServiceEndpoint}/{editItem.Id}", editItem);
+
+            if (response.IsSuccessStatusCode)
+            {
+                editRowStyle = "none";
+            }
+        }
+    }
 }
