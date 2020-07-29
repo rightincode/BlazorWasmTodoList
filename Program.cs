@@ -14,7 +14,6 @@ namespace BlazorWasmTodoList
             builder.DetectIncorrectUsageOfTransients();
             builder.RootComponents.Add<App>("app");
 
-            builder.Services.AddTransient<TransientDisposable>();
             builder.Services.AddScoped(sp => new HttpClient { 
                 BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
             });
@@ -22,16 +21,6 @@ namespace BlazorWasmTodoList
             var host = builder.Build();
             host.EnableTransientDisposableDetection();
             await host.RunAsync();
-        }
-    }
-
-    public class TransientDisposable : IDisposable
-    {
-        public void Dispose() => throw new NotImplementedException();
-
-        public string ReturnHello()
-        {
-            return "Hello";
         }
     }
 }
